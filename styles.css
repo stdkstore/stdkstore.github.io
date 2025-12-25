@@ -180,6 +180,20 @@ body {
   from { transform: translateY(6px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+/* Versions download link green styling */
+.version-download-link {
+    color: #00ff66;
+    border-bottom: 2px solid #00ff66;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.version-download-link:hover {
+    color: #00ff66;
+    opacity: 0.8;
+    text-decoration: none;
+}
 
 .slogan {
   font-size: 14px;
