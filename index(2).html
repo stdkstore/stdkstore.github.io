@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STDK — Relativity is Irrelevant</title>
+<style>
+  @font-face {
+    font-family: 'HF';
+    src: url('hf.ttf') format('truetype');
+    font-display: swap;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --fg: #d4cfc8;
+    --fg-dim: #7a756e;
+    --fg-faint: #3a3630;
+    --accent: #c8b89a;
+    --red: #c4604a;
+    --bg: #070604;
+    --border: #2a2520;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'HF', 'Share Tech Mono', monospace;
+    font-size: 14px;
+    line-height: 1.75;
+    cursor: none;
+    overflow-x: hidden;
+  }
+
+  @media (pointer: coarse) {
+    body { cursor: auto; }
+    #cursor { display: none; }
+  }
+
+  /* ── CANVAS BEHIND EVERYTHING ── */
+  #canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── SCANLINES ── */
+  #scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.13) 3px,
+      rgba(0,0,0,0.13) 4px
+    );
+  }
+
+  /* ── VIGNETTE ── */
+  #vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%);
+  }
+
+  /* ── CURSOR ── */
+  #cursor {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: rgba(255,255,255,0.45);
+    z-index: 9999;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: none;
+  }
+
+  /* ── LAYOUT ── */
+  #wrap {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  @media (max-width: 600px) {
+    #wrap { padding: 0 1.2rem; }
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 5rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 3rem 0 2rem; }
+  }
+
+  .studio-tag {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin-bottom: 1.4rem;
+  }
+
+  .studio-tag span {
+    color: var(--accent);
+  }
+
+  .game-title {
+    font-family: 'HF', 'VT323', monospace;
+    font-size: clamp(2.2rem, 7vw, 5rem);
+    line-height: 1;
+    color: #fff;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+    text-shadow: 0 0 40px rgba(200,184,154,0.25);
+    animation: flicker 8s infinite;
+  }
+
+  .game-subtitle {
+    font-family: 'HF', 'VT323', monospace;
+    font-size: clamp(0.95rem, 3vw, 1.3rem);
+    color: var(--fg-dim);
+    letter-spacing: 0.08em;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.85; }
+    97% { opacity: 1; }
+    98% { opacity: 0.7; }
+    99% { opacity: 1; }
+  }
+
+  /* ── SECTION ── */
+  section {
+    padding: 3rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-of-type {
+    border-bottom: none;
+  }
+
+  /* ── PROSE ── */
+  .journal {
+    color: var(--fg-dim);
+    font-size: 13.5px;
+    line-height: 1.9;
+    max-width: 580px;
+  }
+
+  .journal p {
+    margin-bottom: 1em;
+  }
+
+  .journal p:last-child { margin-bottom: 0; }
+
+  /* ── PITCH ── */
+  .pitch {
+    border-left: 2px solid var(--fg-faint);
+    padding-left: 1.5rem;
+    margin: 2.5rem 0;
+    color: var(--fg);
+    font-size: 13px;
+    line-height: 1.85;
+    max-width: 560px;
+  }
+
+  /* ── FEATURES ── */
+  .features {
+    margin-top: 2rem;
+  }
+
+  .feat {
+    display: flex;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--fg-faint);
+    font-size: 13px;
+    color: var(--fg-dim);
+    align-items: flex-start;
+  }
+
+  .feat:last-child { border-bottom: none; }
+
+  .feat::before {
+    content: '▸';
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── DAYS COUNTER ── */
+  .days-counter {
+    margin: 2.5rem 0;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .days-label {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+
+  .days-num {
+    font-family: 'HF', 'VT323', monospace;
+    font-size: clamp(3.5rem, 10vw, 5rem);
+    line-height: 1;
+    color: var(--fg);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 20px rgba(212,207,200,0.15);
+  }
+
+  .days-sub {
+    font-size: 11px;
+    color: var(--fg-faint);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── CTA ── */
+  .cta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-top: 2.5rem;
+    align-items: flex-start;
+  }
+
+  .btn-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.85rem 2rem;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'HF', 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (pointer: coarse) {
+    .btn-play, .btn-demo { cursor: pointer; }
+  }
+
+  .btn-play::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: translateX(-101%);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    z-index: -1;
+  }
+
+  .btn-play:hover {
+    color: var(--bg);
+  }
+
+  .btn-play:hover::before {
+    transform: translateX(0);
+  }
+
+  .btn-demo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.85rem 2rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg-dim);
+    font-family: 'HF', 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: none;
+    transition: border-color 0.3s, color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-demo:hover {
+    border-color: var(--fg-dim);
+    color: var(--fg);
+  }
+
+  .price-note {
+    font-size: 11px;
+    color: var(--fg-faint);
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 600px) {
+    .btn-play, .btn-demo {
+      width: 100%;
+      justify-content: center;
+      padding: 1rem 1.5rem;
+    }
+    .cta-block { align-items: stretch; }
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 3rem 0 5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 600px) {
+    footer {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 2rem 0 4rem;
+    }
+  }
+
+  .footer-left {
+    font-size: 11px;
+    color: var(--fg-faint);
+    letter-spacing: 0.12em;
+    line-height: 2;
+  }
+
+  .footer-left a {
+    color: var(--fg-dim);
+    text-decoration: none;
+  }
+
+  .footer-left a:hover { color: var(--fg); }
+
+  .cannot-give-up {
+    font-size: 11px;
+    color: var(--fg-faint);
+    text-decoration: line-through;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin-bottom: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sec-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--fg-faint);
+    opacity: 0.4;
+  }
+
+  /* ── GLITCH ── */
+  .glitch {
+    position: relative;
+    display: inline-block;
+  }
+  .glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+  .glitch::before {
+    color: rgba(196,96,74,0.6);
+    animation: glitch1 6s infinite;
+    clip-path: polygon(0 30%, 100% 30%, 100% 60%, 0 60%);
+  }
+  .glitch::after {
+    color: rgba(100,160,160,0.4);
+    animation: glitch2 6s infinite;
+    clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+  }
+  @keyframes glitch1 {
+    0%,89%,100% { transform: none; }
+    90% { transform: translateX(-3px); }
+    91% { transform: translateX(2px); }
+    92% { transform: none; }
+  }
+  @keyframes glitch2 {
+    0%,93%,100% { transform: none; }
+    94% { transform: translateX(3px); }
+    95% { transform: translateX(-1px); }
+    96% { transform: none; }
+  }
+
+  /* ── FADE IN ── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: fadein 1s ease forwards;
+  }
+  .fade-in:nth-child(2) { animation-delay: 0.15s; }
+  .fade-in:nth-child(3) { animation-delay: 0.3s; }
+  .fade-in:nth-child(4) { animation-delay: 0.45s; }
+
+  @keyframes fadein {
+    to { opacity: 1; transform: none; }
+  }
+
+  section, footer, header { animation: fadein 1.2s ease forwards; opacity: 0; }
+  header { animation-delay: 0.4s; }
+  section:nth-of-type(1) { animation-delay: 0.7s; }
+  section:nth-of-type(2) { animation-delay: 0.9s; }
+  section:nth-of-type(3) { animation-delay: 1.1s; }
+  footer { animation-delay: 1.3s; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="cursor"></div>
+
+<div id="wrap">
+
+  <header>
+    <p class="studio-tag">STDK · <span>hobby / solo / one person</span></p>
+    <h1 class="game-title glitch" data-text="Relativity is Irrelevant">Relativity is Irrelevant</h1>
+    <p class="game-subtitle">— a survival game about not having a reason to survive</p>
+  </header>
+
+  <section>
+    <p class="sec-label">Transmission</p>
+    <div class="journal">
+      <p>i don't know why i'm still doing this</p>
+      <br>
+      <p>they might still be out there.<br>
+      that's the only thought that gets me moving.</p>
+      <p>i walk the same broken streets. i eat whatever i find before my stomach gives out. at night my legs stop working right and everything slows and i just... drag myself forward because stopping feels like a decision i can't take back.</p>
+      <p>the radiation shifts every morning. some days i can skirt the edges. other days it's so thick i feel it in my teeth. i go in anyway. i always go in.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label">About</p>
+    <div class="pitch">
+      <p>you scavenge food, manage sanity, read the radiation forecast each morning and decide how much of yourself you're willing to spend today. sanity drops and the world starts lying to you.</p>
+      <p>when you die the map remembers a little. you don't really start over. you just continue differently.</p>
+      <p>there's no win screen. just a number of days, and at the end — a quiet list of what you did to other people to get there.</p>
+    </div>
+
+    <div class="features">
+      <div class="feat">2D top-down, PSX-style visuals</div>
+      <div class="feat">day/night cycle, dynamic radiation zones</div>
+      <div class="feat">sanity system that distorts the world</div>
+      <div class="feat">radio towers that only work on good days</div>
+      <div class="feat">multiple endings depending on what you find and who you became</div>
+      <div class="feat">your choices are counted. silently. the whole time.</div>
+      <div class="feat">optimized 2D performance in Godot</div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label">Play</p>
+
+    <div class="days-counter">
+      <span class="days-label">Days survived</span>
+      <span class="days-num" id="daycount">000</span>
+    </div>
+
+    <div class="cta-block">
+      <a href="https://stdk.itch.io/relativity-is-irrelevant" target="_blank" rel="noopener" class="btn-play">
+        ▸ play now
+      </a>
+      <a href="https://stdk.itch.io/relativity-is-irrelevant" target="_blank" rel="noopener" class="btn-demo">
+        ◈ demo available
+      </a>
+      <span class="price-note">free · donation if you want.</span>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-left">
+      STDK · solo dev · made in Godot<br>
+      <a href="https://stdk.itch.io/relativity-is-irrelevant" target="_blank" rel="noopener">itch.io</a>
+    </div>
+    <span class="cannot-give-up">i cannot give up</span>
+  </footer>
+
+</div>
+
+<script>
+// ── CURSOR ──
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
+
+// ── CANVAS: dust + meteor trail ──
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Dust
+const DUST = 160;
+const dust = [];
+for (let i = 0; i < DUST; i++) {
+  dust.push({
+    x: Math.random() * 2000,
+    y: Math.random() * 2000,
+    vx: (Math.random() - 0.5) * 14,
+    vy: (Math.random() - 0.5) * 14,
+    sz: 0.8 + Math.random() * 4,
+    a:  0.05 + Math.random() * 0.18,
+  });
+}
+
+// Meteor trail
+let mx = 0, my = 0;
+let trail = [];
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  for (let i = 0; i < 2; i++) {
+    trail.push({
+      x: mx + (Math.random()-0.5)*3,
+      y: my + (Math.random()-0.5)*3,
+      sz: 3 + Math.random()*6,
+      a: 0.25 + Math.random()*0.2,
+      life: 1,
+      dx: (Math.random()-0.5)*12,
+      dy: (Math.random()-0.5)*12,
+    });
+    // spark
+    if (Math.random() < 0.5) {
+      trail.push({
+        x: mx, y: my,
+        sz: 1.5 + Math.random()*3,
+        a: 0.15 + Math.random()*0.15,
+        life: 1,
+        dx: (Math.random()-0.5)*80,
+        dy: (Math.random()-0.5)*80,
+      });
+    }
+  }
+});
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Dust
+  for (const p of dust) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    if (p.x < -10) p.x = W + 10;
+    if (p.x > W+10) p.x = -10;
+    if (p.y < -10) p.y = H + 10;
+    if (p.y > H+10) p.y = -10;
+    ctx.fillStyle = `rgba(212,207,200,${p.a})`;
+    ctx.fillRect(p.x, p.y, p.sz, p.sz);
+  }
+
+  // Trail
+  for (let i = trail.length-1; i >= 0; i--) {
+    const p = trail[i];
+    p.life -= dt * 3.5;
+    if (p.life <= 0) { trail.splice(i,1); continue; }
+    p.x += p.dx * dt;
+    p.y += p.dy * dt;
+    const a = p.a * p.life * p.life;
+    ctx.fillStyle = `rgba(212,207,200,${a})`;
+    const h = p.sz * 0.5;
+    ctx.fillRect(p.x-h, p.y-h, p.sz, p.sz);
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ── DAY COUNTER — 1 real second = 1 day ──
+const dc = document.getElementById('daycount');
+let d = 0;
+dc.textContent = String(d).padStart(3,'0');
+setInterval(() => {
+  d++;
+  dc.textContent = String(d).padStart(3,'0');
+}, 1000);
+</script>
+
+</body>
+</html>
