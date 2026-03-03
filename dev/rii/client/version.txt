@@ -1,0 +1,19 @@
+[version]
+latest=001-dev
+public=001
+released=2025-03-03
+
+[message]
+enabled=false
+text=
+link=
+
+[client]
+client_version=1
+client_update_required=false
+client_update_message=Client needs to be updated to play. Reinstall via itch.io.
+client_link=https://stdk.itch.io/relativity-is-irrelevant
+
+[update]
+download=https://github.com/yourrepo/releases/download/001-dev/game.tar.gz
+changelog=https://youritchio.page/devlog
