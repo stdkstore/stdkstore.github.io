@@ -1,1847 +1,719 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STDK · Relativity is Irrelevant</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Teko:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    /* ── VARIABLES ──────────────────────────────────────────── */
-    :root {
-      --bg:       #05070a;
-      --bg2:      #080b10;
-      --bg3:      #0c1018;
-      --surface:  #0f1520;
-      --border:   #1a2030;
-      --border2:  #253040;
-      --text:     #d8dde8;
-      --text2:    #a8b4c4;
-      --muted:    #505050;
-      --muted2:   #2a3545;
-      --accent:   #e8e8e8;
-      --accent2:  #555555;
-      --red:      #c84848;
-      --amber:    #c8a248;
-      --green:    #48c888;
-      --glow:     rgba(255,255,255,0.06);
-      --glow2:    rgba(255,255,255,0.02);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px;
-      line-height: 1.7;
-      overflow-x: hidden;
-    }
-
-    /* SCANLINE OVERLAY */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 9998;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent, transparent 2px,
-        rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
-      );
-    }
-
-    /* NOISE GRAIN */
-    body::after {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 9997;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-      opacity: 0.5;
-    }
-
-    /* ── SCROLLBAR ─────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border2); }
-
-    /* ── UTILITY ───────────────────────────────────────────── */
-    .page { width: 100%; min-height: 100vh; }
-    .page.hidden { display: none !important; }
-
-
-
-    /* ── NAV ───────────────────────────────────────────────── */
-    .nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-      display: flex; align-items: stretch;
-      height: 52px;
-      background: linear-gradient(to bottom, rgba(5,7,10,0.98), rgba(5,7,10,0.85));
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    .nav::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent2), transparent);
-      opacity: 0.4;
-    }
-
-    .nav-logo {
-      display: flex; align-items: center;
-      padding: 0 1.8rem;
-      border-right: 1px solid var(--border);
-      text-decoration: none;
-      gap: 0.8rem;
-      flex-shrink: 0;
-    }
-
-    .nav-logo-img {
-      height: 28px; width: auto; opacity: 0.9;
-      filter: brightness(1.1);
-    }
-
-    .nav-logo-text {
-      font-family: 'Teko', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 600;
-      letter-spacing: 0.2em;
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .nav-links {
-      display: flex; align-items: stretch;
-      list-style: none; flex: 1;
-      padding: 0 0.5rem;
-    }
-
-    .nav-links li { display: flex; }
-
-    .nav-links a {
-      display: flex; align-items: center;
-      padding: 0 1.2rem;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px; letter-spacing: 0.18em;
-      color: var(--muted); text-decoration: none;
-      text-transform: uppercase;
-      transition: color 0.2s;
-      position: relative;
-    }
-
-    .nav-links a::after {
-      content: ''; position: absolute; bottom: 0; left: 1.2rem; right: 1.2rem; height: 1px;
-      background: var(--accent); transform: scaleX(0);
-      transition: transform 0.25s cubic-bezier(0.25,0.1,0.25,1);
-    }
-
-    .nav-links a:hover { color: var(--text); }
-    .nav-links a:hover::after { transform: scaleX(1); }
-    .nav-links a.active { color: var(--accent); }
-    .nav-links a.active::after { transform: scaleX(1); }
-
-    .nav-right {
-      margin-left: auto;
-      display: flex; align-items: center;
-      padding: 0 1.2rem;
-      gap: 1rem;
-      border-left: 1px solid var(--border);
-    }
-
-    .nav-itch {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.2em;
-      color: var(--muted); text-decoration: none;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border: 1px solid var(--border2);
-      transition: all 0.2s;
-    }
-
-    .nav-itch:hover {
-      color: var(--text); border-color: var(--accent2);
-      box-shadow: 0 0 12px rgba(255,255,255,0.06);
-    }
-
-    /* ── HERO ──────────────────────────────────────────────── */
-    .hero {
-      position: relative; width: 100%;
-      height: 100vh; min-height: 600px; max-height: 900px;
-      overflow: hidden;
-      display: flex; align-items: flex-end;
-    }
-
-    .hero-bg {
-      position: absolute; inset: 0;
-      background: var(--bg);
-    }
-
-    .hero-img {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover; object-position: center 30%;
-      filter: brightness(0.45) saturate(0.25) contrast(1.1);
-      transform: scale(1.05);
-      animation: heroZoom 20s ease-out forwards;
-    }
-
-    @keyframes heroZoom {
-      from { transform: scale(1.05); }
-      to   { transform: scale(1.0); }
-    }
-
-    .hero-vignette {
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at center, transparent 30%, rgba(5,7,10,0.7) 100%);
-    }
-
-    .hero-bottom-grad {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 65%;
-      background: linear-gradient(to bottom, transparent, var(--bg) 90%);
-    }
-
-    .hero-left-grad {
-      position: absolute; inset: 0;
-      background: linear-gradient(to right, rgba(5,7,10,0.6) 0%, transparent 50%);
-    }
-
-    .hero-scanlines {
-      position: absolute; inset: 0; pointer-events: none;
-      background: repeating-linear-gradient(
-        to bottom, transparent, transparent 3px,
-        rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
-      );
-    }
-
-    .hero-content {
-      position: relative; z-index: 2;
-      padding: 0 4rem 5rem;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: flex-end;
-      gap: 4rem;
-    }
-
-    .hero-left {}
-    .hero-right {
-      display: flex; flex-direction: column;
-      align-items: flex-end; gap: 0.8rem;
-    }
-
-    .hero-eyebrow {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.35em;
-      color: var(--accent2); text-transform: uppercase;
-      margin-bottom: 0.6rem;
-      display: flex; align-items: center; gap: 0.8rem;
-    }
-
-    .hero-eyebrow::before {
-      content: '';
-      width: 32px; height: 1px;
-      background: var(--accent2);
-      display: inline-block;
-    }
-
-    .hero-game-logo {
-      display: block;
-      height: auto; max-height: 90px;
-      width: auto; max-width: 340px;
-      margin-bottom: 1.2rem;
-      filter: brightness(1.1);
-      animation: fadeInUp 1s 0.3s both;
-    }
-
-    .hero-title {
-      font-family: 'Teko', sans-serif;
-      font-size: clamp(3.5rem, 9vw, 7.5rem);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      line-height: 0.9;
-      color: var(--text);
-      text-transform: uppercase;
-      animation: fadeInUp 1s 0.5s both;
-    }
-
-    .hero-title .glitch-text {
-      position: relative; display: inline-block;
-    }
-
-    .hero-sub {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px; color: var(--muted);
-      font-style: italic; margin-top: 1rem;
-      max-width: 400px;
-      line-height: 1.8;
-      animation: fadeInUp 1s 0.7s both;
-      border-left: 2px solid var(--border2);
-      padding-left: 1rem;
-    }
-
-    .hero-badges {
-      display: flex; gap: 0.5rem; margin-top: 1.4rem;
-      animation: fadeInUp 1s 0.9s both;
-      flex-wrap: wrap;
-    }
-
-    .hero-badge {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.2em;
-      padding: 3px 8px;
-      border: 1px solid var(--border2);
-      color: var(--muted); text-transform: uppercase;
-    }
-
-    .hero-status {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.15em;
-      color: var(--muted); text-transform: uppercase;
-      display: flex; align-items: center; gap: 0.5rem;
-      animation: fadeInUp 1s 0.8s both;
-    }
-
-    .hero-status-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--green);
-      animation: pulse 2.5s infinite;
-      flex-shrink: 0;
-    }
-
-    .hero-scroll-hint {
-      position: absolute; bottom: 1.8rem; left: 50%; transform: translateX(-50%);
-      z-index: 3;
-      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
-      animation: fadeIn 2s 1.5s both;
-    }
-
-    .hero-scroll-hint span {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.3em;
-      color: var(--muted); text-transform: uppercase;
-    }
-
-    .scroll-line {
-      width: 1px; height: 40px;
-      background: linear-gradient(to bottom, var(--muted), transparent);
-      animation: scrollDrop 2s 2s infinite;
-    }
-
-    @keyframes scrollDrop {
-      0%   { transform: scaleY(0); transform-origin: top; }
-      50%  { transform: scaleY(1); transform-origin: top; }
-      51%  { transform: scaleY(1); transform-origin: bottom; }
-      100% { transform: scaleY(0); transform-origin: bottom; }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.25; }
-    }
-
-    /* ── GLITCH EFFECT ─────────────────────────────────────── */
-    .glitch {
-      position: relative;
-      animation: glitchAnim 8s infinite;
-    }
-
-    .glitch::before, .glitch::after {
-      content: attr(data-text);
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%;
-      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
-    }
-
-    .glitch::before {
-      color: rgba(180,60,60,0.7);
-      animation: glitchTop 8s infinite;
-    }
-
-    .glitch::after {
-      color: rgba(60,100,200,0.7);
-      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
-      animation: glitchBottom 8s infinite;
-    }
-
-    @keyframes glitchAnim {
-      0%,94%,100% { transform: none; }
-      95% { transform: skewX(-0.5deg); }
-      96% { transform: skewX(0.5deg); }
-      97% { transform: none; }
-    }
-
-    @keyframes glitchTop {
-      0%,93%,100% { transform: none; opacity: 0; }
-      94% { transform: translateX(-3px); opacity: 0.8; }
-      96% { transform: translateX(3px); opacity: 0.8; }
-      98% { transform: none; opacity: 0; }
-    }
-
-    @keyframes glitchBottom {
-      0%,93%,100% { transform: none; opacity: 0; }
-      95% { transform: translateX(3px); opacity: 0.8; }
-      97% { transform: translateX(-3px); opacity: 0.8; }
-      99% { transform: none; opacity: 0; }
-    }
-
-    /* ── SECTION COMMON ────────────────────────────────────── */
-    .section-wrap {
-      max-width: 1100px; margin: 0 auto;
-      padding: 5rem 4rem;
-    }
-
-    .section-header {
-      display: flex; align-items: center; gap: 1.2rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .section-num {
-      font-family: 'Teko', sans-serif;
-      font-size: 4rem; font-weight: 300;
-      color: var(--border2); line-height: 1;
-      flex-shrink: 0;
-    }
-
-    .section-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.35em;
-      color: var(--accent2); text-transform: uppercase;
-      margin-bottom: 0.3rem;
-    }
-
-    .section-title {
-      font-family: 'Teko', sans-serif;
-      font-size: 2.4rem; font-weight: 500;
-      letter-spacing: 0.12em;
-      color: var(--text); line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .section-divider {
-      flex: 1; height: 1px;
-      background: linear-gradient(to right, var(--border2), transparent);
-    }
-
-    /* ── ABOUT SECTION ─────────────────────────────────────── */
-    .about-section { background: var(--bg); }
-
-    .transmission-block {
-      border-left: 2px solid var(--border2);
-      padding: 1.5rem 2rem;
-      margin-bottom: 3rem;
-      background: var(--bg2);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .transmission-block::before {
-      content: 'TRANSMISSION';
-      position: absolute; top: 0.8rem; right: 1rem;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.3em;
-      color: var(--muted2); text-transform: uppercase;
-    }
-
-    .transmission-text {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px; color: var(--muted);
-      font-style: italic; line-height: 2.2;
-      white-space: pre-line;
-    }
-
-    /* ── ABOUT GRID ────────────────────────────────────────── */
-    .about-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border: 1px solid var(--border);
-    }
-
-    .about-cell {
-      padding: 1.6rem 1.8rem;
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-      transition: background 0.2s;
-    }
-
-    .about-cell:hover { background: var(--bg2); }
-
-    .about-cell::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(to right, var(--accent2), transparent);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .about-cell:hover::before { opacity: 0.5; }
-
-    .about-cell:nth-child(3n) { border-right: none; }
-    .about-cell:nth-last-child(-n+3) { border-bottom: none; }
-
-    .about-cell h4 {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.3em;
-      color: var(--accent2); text-transform: uppercase;
-      margin-bottom: 0.7rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-
-    .about-cell h4::before {
-      content: '//'; color: var(--muted2);
-    }
-
-    .about-cell p {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 15px; font-weight: 400;
-      color: var(--text2); line-height: 1.5;
-    }
-
-    /* ── SCREENSHOTS ───────────────────────────────────────── */
-    .screenshots-section {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .slider-wrap {
-      position: relative; overflow: hidden;
-      border: 1px solid var(--border);
-      background: #000;
-    }
-
-    .slider-wrap::before, .slider-wrap::after {
-      content: '';
-      position: absolute; top: 0; bottom: 0; z-index: 10; pointer-events: none;
-      width: 80px;
-    }
-
-    .slider-wrap::before {
-      left: 0;
-      background: linear-gradient(to right, rgba(5,7,10,0.8), transparent);
-    }
-
-    .slider-wrap::after {
-      right: 0;
-      background: linear-gradient(to left, rgba(5,7,10,0.8), transparent);
-    }
-
-    .slides {
-      display: flex;
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .slides img {
-      width: 100%; flex-shrink: 0;
-      object-fit: cover;
-      filter: saturate(0.2) brightness(0.8) contrast(1.1);
-      display: block; max-height: 520px;
-      transition: filter 1s;
-    }
-
-    .slides img.active {
-      filter: saturate(0.3) brightness(0.9) contrast(1.05);
-    }
-
-    .slider-btn {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(5,7,10,0.7);
-      border: 1px solid var(--border2);
-      color: var(--muted2);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 18px;
-      padding: 1rem 0.75rem; cursor: pointer; z-index: 20;
-      transition: all 0.2s;
-      letter-spacing: 0;
-    }
-
-    .slider-btn:hover {
-      color: var(--text); border-color: var(--accent2);
-      background: rgba(5,7,10,0.95);
-    }
-
-    .slider-btn.prev { left: 0; }
-    .slider-btn.next { right: 0; }
-
-    .slider-ui {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 0.8rem 1rem 0;
-    }
-
-    .slider-counter {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.2em;
-      color: var(--muted);
-    }
-
-    .slider-dots { display: flex; gap: 5px; }
-
-    .dot {
-      width: 24px; height: 2px;
-      background: var(--border2); border: none; cursor: pointer;
-      transition: all 0.3s; padding: 0;
-    }
-
-    .dot.active { background: var(--accent2); width: 40px; }
-
-    /* ── FEATURES ──────────────────────────────────────────── */
-    .features-section { background: var(--bg); }
-
-    .features-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0; border: 1px solid var(--border);
-    }
-
-    .feature-item {
-      padding: 1.4rem 1.8rem;
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      display: flex; gap: 1.2rem; align-items: flex-start;
-      transition: background 0.2s;
-      cursor: default;
-    }
-
-    .feature-item:nth-child(even) { border-right: none; }
-    .feature-item:nth-last-child(-n+2) { border-bottom: none; }
-
-    .feature-item:hover { background: var(--bg2); }
-
-    .feature-icon {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; color: var(--accent2);
-      flex-shrink: 0; margin-top: 3px;
-      letter-spacing: 0;
-    }
-
-    .feature-text {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 15px; color: var(--text2);
-      line-height: 1.5;
-    }
-
-    /* ── STATUS ────────────────────────────────────────────── */
-    .status-section {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .status-grid {
-      display: grid; grid-template-columns: repeat(3,1fr);
-      gap: 1px; background: var(--border);
-      border: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-
-    .status-card {
-      background: var(--bg2); padding: 1.8rem;
-      display: flex; flex-direction: column; gap: 0.6rem;
-    }
-
-    .status-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.3em;
-      color: var(--muted); text-transform: uppercase;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-
-    .status-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--accent); flex-shrink: 0;
-      animation: pulse 2.5s infinite;
-    }
-
-    .status-dot.amber { background: var(--amber); }
-    .status-dot.green { background: var(--green); }
-
-    .status-value {
-      font-family: 'Teko', sans-serif;
-      font-size: 1.8rem; font-weight: 500;
-      letter-spacing: 0.1em;
-      color: var(--text); line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .status-sub {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; color: var(--muted);
-      letter-spacing: 0.1em;
-    }
-
-    .cta-row {
-      display: flex; gap: 0.8rem; flex-wrap: wrap;
-      margin-top: 2rem;
-    }
-
-    .btn {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px; letter-spacing: 0.2em;
-      text-transform: uppercase; text-decoration: none;
-      padding: 0.85rem 1.8rem;
-      border: 1px solid var(--border2);
-      color: var(--muted);
-      transition: all 0.25s;
-      cursor: pointer; background: none;
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      position: relative; overflow: hidden;
-    }
-
-    .btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: var(--glow2);
-      transform: translateX(-100%);
-      transition: transform 0.3s;
-    }
-
-    .btn:hover::before { transform: translateX(0); }
-    .btn:hover { color: var(--text); border-color: var(--accent2); }
-
-    .btn.primary {
-      border-color: var(--accent2); color: var(--accent);
-      background: rgba(255,255,255,0.02);
-    }
-
-    .btn.primary:hover {
-      background: var(--accent2); color: var(--bg);
-      box-shadow: 0 0 20px rgba(255,255,255,0.08);
-    }
-
-    /* ── DEVLOG CTA ────────────────────────────────────────── */
-    .devlog-cta-section {
-      background: var(--bg);
-      padding: 0 4rem 0;
-    }
-
-    .devlog-cta-inner {
-      max-width: 1100px; margin: 0 auto;
-      padding: 3rem 0 5rem;
-    }
-
-    .devlog-cta-btn {
-      width: 100%;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 2.5rem 2.5rem;
-      border: 1px solid var(--border2);
-      background: var(--bg2);
-      cursor: pointer; text-decoration: none;
-      transition: all 0.3s; gap: 2rem;
-      position: relative; overflow: hidden;
-    }
-
-    .devlog-cta-btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, var(--glow2), transparent);
-      opacity: 0; transition: opacity 0.3s;
-    }
-
-    .devlog-cta-btn::after {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(to right, transparent, var(--accent2), transparent);
-      opacity: 0; transition: opacity 0.3s;
-    }
-
-    .devlog-cta-btn:hover { border-color: var(--accent2); }
-    .devlog-cta-btn:hover::before { opacity: 1; }
-    .devlog-cta-btn:hover::after { opacity: 0.6; }
-
-    .devlog-cta-left { display: flex; flex-direction: column; gap: 0.3rem; }
-
-    .devlog-cta-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.35em;
-      color: var(--accent2); text-transform: uppercase;
-    }
-
-    .devlog-cta-title {
-      font-family: 'Teko', sans-serif;
-      font-size: 3rem; font-weight: 500;
-      letter-spacing: 0.1em;
-      color: var(--text); line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .devlog-cta-sub {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px; color: var(--muted); font-style: italic;
-      margin-top: 0.2rem;
-    }
-
-    .devlog-cta-arrow {
-      font-family: 'Teko', sans-serif;
-      font-size: 3rem; color: var(--border2);
-      transition: all 0.3s; line-height: 1;
-      flex-shrink: 0;
-    }
-
-    .devlog-cta-btn:hover .devlog-cta-arrow {
-      color: var(--accent); transform: translateX(6px);
-    }
-
-    /* ── STUDIO ────────────────────────────────────────────── */
-    .studio-section {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-    }
-
-    .studio-inner {
-      border: 1px solid var(--border);
-      display: grid; grid-template-columns: auto 1fr;
-      gap: 0;
-    }
-
-    .studio-identity {
-      padding: 2.5rem;
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      align-items: flex-start; gap: 0.5rem;
-      min-width: 220px;
-    }
-
-    .studio-logo-img {
-      height: 48px; width: auto; margin-bottom: 0.8rem;
-      opacity: 0.85;
-    }
-
-    .studio-name {
-      font-family: 'Teko', sans-serif;
-      font-size: 3.5rem; font-weight: 600;
-      letter-spacing: 0.15em; line-height: 1;
-      color: var(--text);
-    }
-
-    .studio-tagline {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; color: var(--muted);
-      letter-spacing: 0.2em; text-transform: uppercase;
-    }
-
-    .studio-desc-wrap { padding: 2.5rem; }
-
-    .studio-desc {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 15px; color: var(--text2); line-height: 1.85;
-    }
-
-    .studio-desc p + p { margin-top: 1rem; }
-
-    .studio-manifesto {
-      margin-top: 2rem;
-      padding: 1.2rem 1.5rem;
-      border-left: 2px solid var(--accent2);
-      background: rgba(255,255,255,0.02);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px; color: var(--muted);
-      font-style: italic; line-height: 1.9;
-    }
-
-    /* ── FOOTER ────────────────────────────────────────────── */
-    .footer {
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-    }
-
-    .footer-inner {
-      max-width: 1100px; margin: 0 auto;
-      padding: 2rem 4rem;
-      display: flex; justify-content: space-between;
-      align-items: center; gap: 1rem; flex-wrap: wrap;
-    }
-
-    .footer-left {
-      display: flex; align-items: center; gap: 1.5rem;
-    }
-
-    .footer-logo {
-      height: 22px; opacity: 0.5;
-    }
-
-    .footer-copy {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.15em; color: var(--muted);
-    }
-
-    .footer-links {
-      display: flex; gap: 1.5rem;
-    }
-
-    .footer-links a {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.15em;
-      color: var(--muted); text-decoration: none;
-      text-transform: uppercase;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover { color: var(--text); }
-
-    /* ══════════════════════════════════════════════════════ */
-    /*  DEVLOG PAGE                                           */
-    /* ══════════════════════════════════════════════════════ */
-    #page-devlog { display: none; flex-direction: column; min-height: 100vh; }
-    #page-devlog.active { display: flex; }
-
-    .devlog-nav {
-      position: sticky; top: 0; z-index: 400;
-      background: rgba(5,7,10,0.95);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      display: flex; align-items: center; gap: 1.5rem;
-      padding: 0 2.5rem; height: 52px;
-    }
-
-    .devlog-back {
-      background: none; border: 1px solid var(--border2);
-      color: var(--muted);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; letter-spacing: 0.2em;
-      padding: 5px 12px; cursor: pointer;
-      transition: all 0.2s; text-transform: uppercase;
-    }
-
-    .devlog-back:hover { color: var(--text); border-color: var(--accent2); }
-
-    .devlog-nav-title {
-      font-family: 'Teko', sans-serif;
-      font-size: 1.5rem; font-weight: 500;
-      letter-spacing: 0.15em; color: var(--text);
-    }
-
-    .devlog-nav-sub {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; letter-spacing: 0.15em;
-      color: var(--muted); text-transform: uppercase;
-      margin-left: auto;
-    }
-
-    .devlog-body {
-      max-width: 960px; margin: 0 auto;
-      padding: 3rem 2.5rem 6rem;
-      width: 100%;
-    }
-
-    .devlog-header-block {
-      margin-bottom: 2.5rem;
-      padding-bottom: 2rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .devlog-header-block h1 {
-      font-family: 'Teko', sans-serif;
-      font-size: 3.5rem; font-weight: 500;
-      letter-spacing: 0.1em; line-height: 1;
-      color: var(--text); text-transform: uppercase;
-    }
-
-    .devlog-header-block p {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px; color: var(--muted); margin-top: 0.5rem;
-    }
-
-    .devlog-loading {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px; color: var(--muted);
-      letter-spacing: 0.2em; padding: 3rem 0;
-      animation: pulse 1.5s infinite;
-      display: flex; align-items: center; gap: 0.8rem;
-    }
-
-    .devlog-loading::before {
-      content: '';
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent2);
-      animation: pulse 0.8s infinite;
-    }
-
-    .devlog-error {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px; color: var(--red);
-      letter-spacing: 0.15em; padding: 2rem 0; line-height: 2;
-    }
-
-    /* ── POST LIST ─────────────────────────────────────────── */
-    .post-list { display: flex; flex-direction: column; gap: 1px; }
-
-    .post-card {
-      background: var(--bg2); cursor: pointer;
-      border: 1px solid var(--border);
-      transition: all 0.2s;
-    }
-
-    .post-card:hover {
-      border-color: var(--border2);
-      background: var(--surface);
-    }
-
-    .post-card-inner {
-      display: grid;
-      grid-template-columns: 80px 56px 1fr auto auto;
-      align-items: center; gap: 1.2rem;
-      padding: 1rem 1.2rem;
-    }
-
-    .post-version { display: flex; flex-direction: column; align-items: center; }
-
-    .post-cycle {
-      font-family: 'Teko', sans-serif;
-      font-size: 2.2rem; font-weight: 500;
-      letter-spacing: 0.04em; color: var(--text); line-height: 1;
-    }
-
-    .post-tier-step {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; color: var(--muted); letter-spacing: 0.08em;
-    }
-
-    .post-cover {
-      width: 56px; height: 44px; object-fit: cover;
-      opacity: 0.6; filter: saturate(0.3) brightness(0.7);
-      border: 1px solid var(--border);
-    }
-
-    .post-meta { min-width: 0; }
-
-    .post-title-text {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 15px; font-weight: 500;
-      color: var(--text2); white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-      margin-bottom: 2px;
-    }
-
-    .post-date {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; color: var(--muted); letter-spacing: 0.1em;
-    }
-
-    .post-badge {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 7px; letter-spacing: 0.15em;
-      padding: 2px 8px;
-      border: 1px solid var(--border2);
-      color: var(--muted); text-transform: uppercase;
-    }
-
-    .post-arr {
-      color: var(--muted2); font-size: 16px;
-      transition: all 0.2s;
-    }
-
-    .post-card:hover .post-arr {
-      color: var(--accent); transform: translateX(4px);
-    }
-
-    /* ── POST MODAL ────────────────────────────────────────── */
-    .post-modal {
-      display: none; position: fixed; inset: 0; z-index: 600;
-      background: rgba(0,0,0,0.92); overflow-y: auto;
-      padding: 3rem 1.5rem;
-      backdrop-filter: blur(8px);
-    }
-
-    .post-modal.open { display: flex; align-items: flex-start; justify-content: center; }
-
-    .post-modal-inner {
-      background: var(--bg2);
-      border: 1px solid var(--border2);
-      max-width: 760px; width: 100%;
-      padding: 3rem; position: relative;
-      animation: modalIn 0.3s cubic-bezier(0.16,1,0.3,1);
-      margin: auto;
-    }
-
-    .post-modal-inner::before {
-      content: '';
-      position: absolute; top: 0; left: 2rem; right: 2rem; height: 1px;
-      background: linear-gradient(to right, transparent, var(--accent2), transparent);
-    }
-
-    @keyframes modalIn {
-      from { opacity: 0; transform: translateY(20px) scale(0.98); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .modal-close {
-      position: absolute; top: 1.5rem; right: 1.5rem;
-      background: none; border: 1px solid var(--border2);
-      color: var(--muted);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px; padding: 4px 10px; cursor: pointer;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      transition: all 0.2s;
-    }
-
-    .modal-close:hover { color: var(--text); border-color: var(--accent2); }
-
-    .modal-version-row {
-      display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.8rem;
-    }
-
-    .modal-cycle {
-      font-family: 'Teko', sans-serif;
-      font-size: 4rem; font-weight: 500;
-      letter-spacing: 0.05em; color: var(--text); line-height: 1;
-    }
-
-    .modal-tier-step {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px; color: var(--muted); letter-spacing: 0.1em;
-    }
-
-    .modal-title {
-      font-family: 'Teko', sans-serif;
-      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
-      font-weight: 500; letter-spacing: 0.06em;
-      color: var(--text); line-height: 1.1; margin-bottom: 0.4rem;
-      text-transform: uppercase;
-    }
-
-    .modal-date {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 8px; color: var(--muted);
-      letter-spacing: 0.25em; margin-bottom: 2rem;
-      text-transform: uppercase;
-    }
-
-    .modal-hero-img {
-      width: 100%; max-height: 300px; object-fit: cover;
-      margin-bottom: 2rem;
-      filter: saturate(0.3) brightness(0.8);
-      display: block; border: 1px solid var(--border);
-    }
-
-    .modal-body {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 15px; color: var(--text2); line-height: 1.85;
-    }
-
-    .modal-body img {
-      max-width: 100%; margin: 1.2rem 0;
-      filter: saturate(0.25) brightness(0.8);
-      display: block; border: 1px solid var(--border);
-    }
-
-    .modal-body h1,.modal-body h2,.modal-body h3 {
-      font-family: 'Teko', sans-serif;
-      font-size: 1.6rem; font-weight: 500;
-      letter-spacing: 0.08em; color: var(--text);
-      margin: 1.5rem 0 0.5rem; text-transform: uppercase;
-    }
-
-    .modal-body p { margin-bottom: 0.8rem; }
-    .modal-body a { color: var(--accent2); }
-
-    .modal-body ul, .modal-body ol {
-      padding-left: 1.5rem; margin-bottom: 0.8rem;
-    }
-
-    /* ── MOBILE MENU ───────────────────────────────────────── */
-    .nav-hamburger {
-      display: none;
-      flex-direction: column; gap: 5px;
-      background: none; border: 1px solid var(--border2);
-      padding: 8px 10px; cursor: pointer;
-      margin-left: auto; margin-right: 0;
-      transition: border-color 0.2s;
-    }
-    .nav-hamburger:hover { border-color: var(--accent2); }
-    .nav-hamburger span {
-      display: block; width: 18px; height: 1px;
-      background: var(--muted);
-      transition: all 0.3s;
-    }
-    .nav-hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); background: var(--text); }
-    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
-    .nav-hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); background: var(--text); }
-
-    .mobile-menu {
-      display: none;
-      position: fixed; top: 52px; left: 0; right: 0;
-      background: rgba(5,7,10,0.98);
-      border-bottom: 1px solid var(--border2);
-      z-index: 490;
-      flex-direction: column;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transform: translateY(-8px);
-      opacity: 0;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      pointer-events: none;
-    }
-    .mobile-menu.open {
-      display: flex;
-      opacity: 1; transform: translateY(0);
-      pointer-events: all;
-    }
-    .mobile-menu a, .mobile-menu button {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.8rem;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px; letter-spacing: 0.2em;
-      color: var(--muted); text-decoration: none;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-      background: none; border-left: none; border-right: none; border-top: none;
-      cursor: pointer;
-      transition: color 0.2s, background 0.2s;
-      width: 100%; text-align: left;
-    }
-    .mobile-menu a:last-child, .mobile-menu button:last-child { border-bottom: none; }
-    .mobile-menu a:hover, .mobile-menu button:hover { color: var(--text); background: var(--bg2); }
-    .mobile-menu a::after, .mobile-menu button::after { content: '›'; color: var(--muted2); }
-
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .nav-right { display: none; }
-      .nav-hamburger { display: flex; }
-    }
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hero-content {
-        grid-template-columns: 1fr;
-        padding: 0 1.5rem 4rem;
-        gap: 2rem;
-      }
-      .hero-right { display: none; }
-      .section-wrap { padding: 3.5rem 1.5rem; }
-      .about-grid { grid-template-columns: 1fr 1fr; }
-      .about-cell:nth-child(3n) { border-right: 1px solid var(--border); }
-      .about-cell:nth-child(2n) { border-right: none; }
-      .features-grid { grid-template-columns: 1fr; }
-      .feature-item:nth-child(even) { border-right: 1px solid var(--border); }
-      .feature-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
-      .feature-item:last-child { border-bottom: none; }
-      .status-grid { grid-template-columns: 1fr; }
-      .studio-inner { grid-template-columns: 1fr; }
-      .studio-identity { border-right: none; border-bottom: 1px solid var(--border); }
-      .devlog-cta-section { padding: 0 1.5rem; }
-      .footer-inner { padding: 1.5rem; flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .post-card-inner { grid-template-columns: 60px 40px 1fr auto; }
-      .post-badge { display: none; }
-      .post-modal-inner { padding: 1.8rem; }
-      .devlog-nav-sub { display: none; }
-    }
-
-    @media (max-width: 480px) {
-      .hero-title { font-size: 3.2rem; }
-      .about-grid { grid-template-columns: 1fr; }
-      .about-cell { border-right: none !important; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RELATIVITY IS IRRELEVANT — STDK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --white: #e8e4d9;
+    --dim: #6b6660;
+    --mid: #2a2825;
+    --accent: #c8c0b0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Share Tech Mono', monospace;
+    cursor: crosshair;
+    overflow-x: hidden;
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.35;
+  }
+
+  /* ── SCANLINES ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── ALERT TICKER ── */
+  .ticker-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background: var(--white);
+    color: var(--bg);
+    overflow: hidden;
+    height: 28px;
+    display: flex;
+    align-items: center;
+  }
+  .ticker-label {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    padding: 0 14px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    border-right: 2px solid var(--bg);
+    letter-spacing: 2px;
+  }
+  .ticker-track {
+    display: flex;
+    animation: ticker 38s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-track span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 0 60px 0 0;
+    letter-spacing: 1px;
+  }
+  @keyframes ticker {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── HERO BANNER ── */
+  .hero {
+    margin-top: 28px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    max-height: 100vh;
+  }
+  .hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(100%) contrast(1.1);
+    opacity: 0.88;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(10,10,10,0.7) 80%, var(--bg) 100%);
+  }
+  .hero-title {
+    position: absolute;
+    bottom: 48px;
+    left: 48px;
+    right: 48px;
+  }
+  .hero-title h1 {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(28px, 6vw, 72px);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--white);
+    text-shadow: 0 0 40px rgba(0,0,0,0.9);
+  }
+  .hero-title .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(10px, 1.4vw, 14px);
+    color: var(--dim);
+    margin-top: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .hero-title .tags {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    border: 1px solid var(--dim);
+    padding: 4px 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 32px;
+    border-bottom: 1px solid var(--mid);
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .section-id {
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--dim);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .section-title {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(22px, 4vw, 40px);
+    color: var(--white);
+    margin-bottom: 40px;
+    font-weight: normal;
+    position: relative;
+    display: inline-block;
+  }
+  .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 40px;
+    height: 1px;
+    background: var(--white);
+  }
+
+  /* ── BROADCAST ── */
+  .broadcast-box {
+    border: 1px solid #333;
+    padding: 32px;
+    position: relative;
+    background: #0d0d0d;
+    margin-bottom: 40px;
+  }
+  .broadcast-box::before {
+    content: '◈ EMERGENCY BROADCAST — KARSK-17 ◈';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--bg);
+    padding: 0 10px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: var(--white);
+    animation: flicker 5s infinite;
+  }
+  .broadcast-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: #aaa49e;
+    white-space: pre-line;
+  }
+  .broadcast-text strong {
+    color: var(--white);
+    font-weight: normal;
+  }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--mid);
+    margin-top: 40px;
+    border: 1px solid var(--mid);
+  }
+  .stat {
+    background: var(--bg);
+    padding: 24px 20px;
+    position: relative;
+  }
+  .stat-num {
+    font-family: 'VT323', monospace;
+    font-size: 42px;
+    color: var(--white);
+    display: block;
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    display: block;
+  }
+
+  /* ── TRANSMISSION ── */
+  .log-entry {
+    border-left: 2px solid var(--mid);
+    padding: 0 0 0 24px;
+    margin-bottom: 36px;
+  }
+  .log-entry p {
+    font-family: 'IM Fell English', serif;
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--accent);
+    font-style: italic;
+  }
+  .log-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-top: 12px;
+    display: block;
+  }
+
+  /* ── INFO GRID ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--mid);
+    border: 1px solid var(--mid);
+    margin-bottom: 32px;
+  }
+  .info-cell {
+    background: var(--bg);
+    padding: 24px 22px;
+  }
+  .info-cell .label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .info-cell .value {
+    font-family: 'IM Fell English', serif;
+    font-size: 16px;
+    color: var(--white);
+    line-height: 1.5;
+  }
+  @media (max-width: 540px) {
+    .info-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── MECHANICS LIST ── */
+  .mechanics-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--mid);
+  }
+  .mechanics-list li {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--mid);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+    position: relative;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mechanics-list li:last-child { border-bottom: none; }
+  .mechanics-list li::before {
+    content: '▸';
+    margin-right: 12px;
+    color: var(--white);
+    font-size: 10px;
+  }
+  .mechanics-list li:hover {
+    background: var(--mid);
+    color: var(--white);
+  }
+
+  /* ── STATUS ── */
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--mid);
+    border: 1px solid var(--mid);
+    margin-bottom: 40px;
+  }
+  .status-cell {
+    background: var(--bg);
+    padding: 28px 22px;
+  }
+  .status-cell .label {
+    font-family: 'VT323', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--white);
+    animation: pulse-dot 2s infinite;
+  }
+  .dot.inactive { background: var(--dim); animation: none; }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+  .status-cell .val {
+    font-family: 'IM Fell English', serif;
+    font-size: 18px;
+    color: var(--white);
+    display: block;
+  }
+  .status-cell .note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .status-grid { grid-template-columns: 1fr; }
+  }
+
+  .links-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .link-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--white);
+    text-decoration: none;
+    border: 1px solid var(--white);
+    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .link-btn:hover {
+    background: var(--white);
+    color: var(--bg);
+  }
+  .link-btn.secondary {
+    border-color: var(--dim);
+    color: var(--dim);
+  }
+  .link-btn.secondary:hover {
+    background: var(--dim);
+    color: var(--bg);
+  }
+
+  /* ── DEV SECTION ── */
+  .dev-bio {
+    border: 1px solid var(--mid);
+    padding: 36px;
+    position: relative;
+    background: #0d0d0d;
+  }
+  .dev-bio::before {
+    content: 'STDK';
+    position: absolute;
+    top: -13px;
+    left: 28px;
+    background: var(--bg);
+    padding: 0 10px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: var(--white);
+  }
+  .dev-bio p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    line-height: 2.1;
+    color: #999;
+    margin-bottom: 18px;
+  }
+  .dev-bio p:last-of-type { margin-bottom: 0; }
+  .dev-quote {
+    border-top: 1px solid var(--mid);
+    margin-top: 28px;
+    padding-top: 28px;
+    font-family: 'IM Fell English', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--dim);
+    line-height: 1.7;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 40px 32px 60px;
+    border-top: 1px solid var(--mid);
+  }
+  footer .f-title {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    letter-spacing: 6px;
+    color: var(--mid);
+    margin-bottom: 10px;
+  }
+  footer .f-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 2px;
+  }
+
+  /* ── FLICKER ANIM ── */
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96%            { opacity: 0.4; }
+    97%            { opacity: 1; }
+    98%            { opacity: 0.2; }
+    99%            { opacity: 0.9; }
+  }
+
+  /* ── SCROLL FADE IN ── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: var(--mid);
+    margin: 0 auto 60px;
+  }
+</style>
 </head>
 <body>
 
-
-
-<!-- ════════════════════════════════════════════════════════ -->
-<!--  MAIN PAGE                                               -->
-<!-- ════════════════════════════════════════════════════════ -->
-<div id="page-main" class="page">
-
-  <!-- NAV -->
-  <nav class="nav">
-    <a class="nav-logo" href="#">
-      <img class="nav-logo-img" src="https://stdkstore.github.io/dev/logor2.png" alt="STDK" onerror="this.style.display='none'">
-      <span class="nav-logo-text">STDK</span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#game" class="active" onclick="setActive(this)">Game</a></li>
-      <li><a href="#screenshots" onclick="setActive(this)">Screenshots</a></li>
-      <li><a href="#features" onclick="setActive(this)">Features</a></li>
-      <li><a href="#studio" onclick="setActive(this)">Studio</a></li>
-      <li><a href="#" onclick="openDevlog(); return false;">Devlog</a></li>
-    </ul>
-    <div class="nav-right">
-      <a href="https://stdk.itch.io" target="_blank" rel="noopener" class="nav-itch">itch.io ↗</a>
-    </div>
-    <button class="nav-hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
-  </nav>
-
-  <!-- MOBILE MENU -->
-  <nav class="mobile-menu" id="mobile-menu">
-    <a href="#game" onclick="closeMobileMenu()">Game</a>
-    <a href="#screenshots" onclick="closeMobileMenu()">Screenshots</a>
-    <a href="#features" onclick="closeMobileMenu()">Features</a>
-    <a href="#studio" onclick="closeMobileMenu()">Studio</a>
-    <button onclick="closeMobileMenu(); openDevlog();">Devlog</button>
-    <a href="https://stdk.itch.io" target="_blank" rel="noopener" onclick="closeMobileMenu()">itch.io ↗</a>
-  </nav>
-
-  <!-- HERO -->
-  <section class="hero" id="game">
-    <div class="hero-bg"></div>
-    <img class="hero-img" src="MJ.png" alt="Relativity is Irrelevant" />
-    <div class="hero-vignette"></div>
-    <div class="hero-left-grad"></div>
-    <div class="hero-bottom-grad"></div>
-    <div class="hero-scanlines"></div>
-
-    <div class="hero-content">
-      <div class="hero-left">
-        <p class="hero-eyebrow">STDK · In Development · Made in Godot</p>
-        <img class="hero-game-logo" src="https://stdkstore.github.io/dev/logor2.png" alt="Relativity is Irrelevant" onerror="this.style.display='none'">
-        <h1 class="hero-title glitch" data-text="RELATIVITY IS IRRELEVANT">RELATIVITY<br>IS IRRELEVANT</h1>
-        <p class="hero-sub">a survival game about not having a reason to survive</p>
-        <div class="hero-badges">
-          <span class="hero-badge">2D Top-Down</span>
-          <span class="hero-badge">PSX Visuals</span>
-          <span class="hero-badge">No Combat</span>
-          <span class="hero-badge">Psychological Horror</span>
-        </div>
-        <div style="display:flex;gap:0.8rem;margin-top:1.6rem;flex-wrap:wrap;">
-          <a href="https://stdk.itch.io" target="_blank" rel="noopener" class="btn primary">stdk.itch.io ↗</a>
-          <button class="btn" onclick="openDevlog()">View Devlog</button>
-        </div>
-      </div>
-
-      <div class="hero-right"></div>
-    </div>
-
-    <div class="hero-scroll-hint">
-      <span>Scroll</span>
-      <div class="scroll-line"></div>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section class="about-section" id="game-info">
-    <div class="section-wrap">
-      <div class="section-header">
-        <div class="section-num">01</div>
-        <div>
-          <div class="section-label">// Transmission</div>
-          <div class="section-title">Intercepted Signal</div>
-        </div>
-        <div class="section-divider"></div>
-      </div>
-
-      <div class="transmission-block">
-        <p class="transmission-text">i don't know why i'm still doing this.
-
-they might still be out there. that's the only thought that gets me moving.
-
-the radiation shifts every morning. some days i can skirt the edges. other days it's so thick i feel it in my teeth. i go in anyway. i always go in.</p>
-      </div>
-
-      <div class="about-grid">
-        <div class="about-cell">
-          <h4>Genre</h4>
-          <p>2D top-down survival · PSX-style visuals · no combat</p>
-        </div>
-        <div class="about-cell">
-          <h4>You Die Of</h4>
-          <p>Radiation. Starvation. Sanity collapse. Not monsters.</p>
-        </div>
-        <div class="about-cell">
-          <h4>Core Loop</h4>
-          <p>Loot · trade · explore · plan · decide how much of yourself to spend today</p>
-        </div>
-        <div class="about-cell">
-          <h4>Death</h4>
-          <p>The map remembers. You don't start over. You continue differently.</p>
-        </div>
-        <div class="about-cell">
-          <h4>Win Condition</h4>
-          <p>There is no win screen. Just a day count — and a quiet list of what you did to others.</p>
-        </div>
-        <div class="about-cell">
-          <h4>Sanity</h4>
-          <p>Drop low enough and the world starts lying to you.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SCREENSHOTS -->
-  <section class="screenshots-section" id="screenshots">
-    <div class="section-wrap">
-      <div class="section-header">
-        <div class="section-num">02</div>
-        <div>
-          <div class="section-label">// Captured</div>
-          <div class="section-title">Field Recordings</div>
-        </div>
-        <div class="section-divider"></div>
-      </div>
-
-      <div class="slider-wrap">
-        <div class="slides" id="slides">
-          <img src="InShot_20260301_091423389.jpg" alt="Screenshot 1" />
-          <img src="InShot_20260301_091827021.jpg" alt="Screenshot 2" />
-          <img src="InShot_20260301_092102892.jpg" alt="Screenshot 3" />
-        </div>
-        <button class="slider-btn prev" onclick="slide(-1)">‹</button>
-        <button class="slider-btn next" onclick="slide(1)">›</button>
-      </div>
-      <div class="slider-ui">
-        <span class="slider-counter" id="slider-counter">01 / 03</span>
-        <div class="slider-dots" id="dots"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section class="features-section" id="features">
-    <div class="section-wrap">
-      <div class="section-header">
-        <div class="section-num">03</div>
-        <div>
-          <div class="section-label">// Systems</div>
-          <div class="section-title">Core Mechanics</div>
-        </div>
-        <div class="section-divider"></div>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">Day/night cycle with dynamic radiation zones — read the forecast, then decide</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">Sanity system that distorts the world the further you fall</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">Radio towers — functional only on good days</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">Multiple endings shaped by what you found and who you became</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">Your choices are counted. Silently. The whole time.</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">▸▸</span>
-          <span class="feature-text">PSX-style 2D visuals, optimised performance in Godot</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STATUS -->
-  <section class="status-section">
-    <div class="section-wrap">
-      <div class="section-header">
-        <div class="section-num">04</div>
-        <div>
-          <div class="section-label">// Live Data</div>
-          <div class="section-title">Project Status</div>
-        </div>
-        <div class="section-divider"></div>
-      </div>
-
-      <div class="status-grid">
-        <div class="status-card">
-          <div class="status-label">
-            <span class="status-dot"></span>
-            Development Phase
-          </div>
-          <div class="status-value">In Development</div>
-          <div class="status-sub">Active · Solo · Godot Engine</div>
-        </div>
-        <div class="status-card">
-          <div class="status-label">
-            <span class="status-dot amber"></span>
-            Demo Build
-          </div>
-          <div class="status-value">Coming Soon</div>
-          <div class="status-sub">Free to Play</div>
-        </div>
-        <div class="status-card">
-          <div class="status-label">
-            <span class="status-dot green"></span>
-            Full Release Pricing
-          </div>
-          <div class="status-value">$2 – $7</div>
-          <div class="status-sub">Pay what feels fair</div>
-        </div>
-      </div>
-
-      <div class="cta-row">
-        <a href="https://stdk.itch.io" target="_blank" rel="noopener" class="btn primary">stdk.itch.io ↗</a>
-        <a href="https://bsky.app/profile/stdkstore.github.io" target="_blank" rel="noopener" class="btn">Bluesky ↗</a>
-        <a href="https://mastodon.social/@stdkstore.github.io@bsky.brid.gy" target="_blank" rel="noopener" class="btn">Mastodon ↗</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- DEVLOG CTA -->
-  <section class="devlog-cta-section">
-    <div class="devlog-cta-inner">
-      <button class="devlog-cta-btn" onclick="openDevlog()">
-        <div class="devlog-cta-left">
-          <span class="devlog-cta-label">// Development Log</span>
-          <span class="devlog-cta-title">DEVLOG</span>
-          <span class="devlog-cta-sub">Updates · Patches · Major releases — all logged here</span>
-        </div>
-        <span class="devlog-cta-arrow">→</span>
-      </button>
-    </div>
-  </section>
-
-  <!-- STUDIO -->
-  <section class="studio-section" id="studio">
-    <div class="section-wrap">
-      <div class="section-header">
-        <div class="section-num">05</div>
-        <div>
-          <div class="section-label">// Developer</div>
-          <div class="section-title">The Studio</div>
-        </div>
-        <div class="section-divider"></div>
-      </div>
-
-      <div class="studio-inner">
-        <div class="studio-identity">
-          <img class="studio-logo-img" src="https://stdkstore.github.io/dev/logor2.png" alt="STDK" onerror="this.style.display='none'">
-          <div class="studio-name">STDK</div>
-          <div class="studio-tagline">Solo · Hobby · Godot</div>
-        </div>
-        <div class="studio-desc-wrap">
-  <div class="studio-desc">
-    <p>I'm 17, working a mechanical job, building games on the side. School didn’t stick. The path toward becoming a "real" developer closed a while ago, and that’s just how it is. But I never really stopped making things.</p>
-    <p>I build games in the gaps — after shifts, on weekends, whenever I’ve got enough energy left. No team, no budget, no plan to go full-time. Just Godot, a folder full of ideas, and enough stubbornness to finish what I start.</p>
-  </div>
-  <div class="studio-manifesto">
-    "Not everyone who builds things ends up where they thought they were going. Sometimes you just keep building anyway."
-  </div>
-</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-left">
-        <img class="footer-logo" src="https://stdkstore.github.io/dev/logor2.png" alt="STDK" onerror="this.style.display='none'">
-        <span class="footer-copy">© STDK · All rights reserved</span>
-      </div>
-      <div class="footer-links">
-        <a href="https://stdk.itch.io" target="_blank" rel="noopener">itch.io</a>
-        <a href="https://bsky.app/profile/stdkstore.github.io" target="_blank" rel="noopener">Bluesky</a>
-        <a href="https://mastodon.social/@stdkstore.github.io@bsky.brid.gy" target="_blank" rel="noopener">Mastodon</a>
-      </div>
-    </div>
-  </footer>
-
-</div><!-- /page-main -->
-
-
-<!-- ════════════════════════════════════════════════════════ -->
-<!--  DEVLOG PAGE                                             -->
-<!-- ════════════════════════════════════════════════════════ -->
-<div id="page-devlog">
-
-  <nav class="devlog-nav">
-    <button class="devlog-back" onclick="closeDevlog()">← Back</button>
-    <span class="devlog-nav-title">DEVLOG</span>
-    <span class="devlog-nav-sub">STDK · Relativity is Irrelevant</span>
-  </nav>
-
-  <div class="devlog-body">
-    <div class="devlog-header-block">
-      <h1>Development Log</h1>
-      <p>// Patch notes, updates, and milestone releases — pulled live from itch.io</p>
-    </div>
-    <div id="devlog-content">
-      <div class="devlog-loading">// LOADING TRANSMISSIONS...</div>
-    </div>
-  </div>
-
-</div><!-- /page-devlog -->
-
-
-<!-- POST MODAL -->
-<div class="post-modal" id="post-modal" onclick="closeModalOutside(event)">
-  <div class="post-modal-inner">
-    <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
-    <div id="modal-body-content"></div>
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-label">⚠ ALERT</div>
+  <div class="ticker-track">
+    <span>KARSK-17 REACTOR STATUS: ALL FOUR REACTORS DESTROYED &nbsp;|&nbsp; RADIATION SPREADING EAST &nbsp;|&nbsp; ZERKVOGRAD TUNNEL: PERMANENTLY CLOSED &nbsp;|&nbsp; CONFIRMED DEATHS: 25,000+ &nbsp;|&nbsp; GOVERNMENT FORCES CANNOT ENTER CONTAMINATED ZONE &nbsp;|&nbsp; CITIZENS OF VOKLANDEK — HEAD WEST — HEAD WEST — HEAD WEST &nbsp;|&nbsp;</span>
+    <span>KARSK-17 REACTOR STATUS: ALL FOUR REACTORS DESTROYED &nbsp;|&nbsp; RADIATION SPREADING EAST &nbsp;|&nbsp; ZERKVOGRAD TUNNEL: PERMANENTLY CLOSED &nbsp;|&nbsp; CONFIRMED DEATHS: 25,000+ &nbsp;|&nbsp; GOVERNMENT FORCES CANNOT ENTER CONTAMINATED ZONE &nbsp;|&nbsp; CITIZENS OF VOKLANDEK — HEAD WEST — HEAD WEST — HEAD WEST &nbsp;|&nbsp;</span>
   </div>
 </div>
 
+<!-- HERO -->
+<div class="hero">
+  <img src="game_art_launcher.png" alt="Relativity Is Irrelevant — Game Art">
+  <div class="hero-overlay"></div>
+  <div class="hero-title">
+    <div class="sub">STDK · 2025</div>
+    <h1>RELATIVITY IS<br>IRRELEVANT</h1>
+    <div class="tags">
+      <span class="tag">2D Top-Down</span>
+      <span class="tag">PSX Visuals</span>
+      <span class="tag">No Combat</span>
+      <span class="tag">Psychological Horror</span>
+    </div>
+    <p style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#666;margin-top:18px;letter-spacing:2px;">A SURVIVAL GAME ABOUT NOT HAVING A REASON TO SURVIVE</p>
+  </div>
+</div>
+
+<!-- 01 // BROADCAST -->
+<section id="broadcast" class="fade-in">
+  <span class="section-id">01 // TRANSMISSION</span>
+  <h2 class="section-title">Emergency Broadcast</h2>
+
+  <div class="broadcast-box">
+    <div class="broadcast-text"><strong>Due to the nuclear fallout in Karsk-17</strong>, all four nuclear reactors have exploded. The situation is critical. We are currently detecting extremely high levels of radiation spreading toward the eastern sectors.
+
+The Zerkvograd Tunnel has been permanently closed. The nuclear blast caused a structural collapse inside the tunnel — it is completely impassable. <strong>At this time, there is no safe route out of Karsk-17.</strong>
+
+All citizens are strongly advised to remain inside shelters and avoid unnecessary exposure. Government rescue and military support cannot enter the contaminated zone. Communications with the outside world remain unstable.
+
+<strong>Citizens of Voklandek — you must remain calm. For now, survival will depend on the people of Karsk-17 themselves.</strong>
+
+Further updates will follow <em>if</em> communication systems remain operational.</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-num">25,000</span>
+      <span class="stat-label">Confirmed Dead</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">5,000+</span>
+      <span class="stat-label">Radiation Poisoning</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">4</span>
+      <span class="stat-label">Reactors Destroyed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">2–3</span>
+      <span class="stat-label">Days to Evacuate</span>
+    </div>
+  </div>
+</section>
+
+<!-- 02 // STORY -->
+<section id="story" class="fade-in">
+  <span class="section-id">02 // INTERCEPTED SIGNAL</span>
+  <h2 class="section-title">The Player</h2>
+
+  <div class="log-entry">
+    <p>I don't know why I'm still doing this. They might still be out there. That's the only thought that gets me moving. The radiation shifts every morning. Some days I can skirt the edges. Other days it's so thick I feel it in my teeth.</p>
+    <p style="margin-top:16px;">I go in anyway. I always go in.</p>
+    <span class="log-meta">— recovered transmission fragment · origin unknown · date corrupted</span>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-cell">
+      <span class="label">Your Position</span>
+      <span class="value">Zervograd — town adjacent to Karsk-17</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Why You Survived</span>
+      <span class="value">You worked a company job in the next city. You weren't home when it happened.</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Your Family</span>
+      <span class="value">Still in Karsk-17. You don't know if they're alive.</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Your Window</span>
+      <span class="value">2–3 days. The wind is fast. Then it reaches you too.</span>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-cell">
+      <span class="label">Genre</span>
+      <span class="value">2D top-down survival · PSX-style visuals · no combat</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">You Die Of</span>
+      <span class="value">Radiation. Starvation. Sanity collapse. Not monsters.</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Core Loop</span>
+      <span class="value">Loot · trade · explore · plan · decide how much of yourself to spend today</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Death</span>
+      <span class="value">The map remembers. You don't start over. You continue differently.</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Win Condition</span>
+      <span class="value">There is no win screen. Just a day count — and a quiet list of what you did to others.</span>
+    </div>
+    <div class="info-cell">
+      <span class="label">Sanity</span>
+      <span class="value">Drop low enough and the world starts lying to you.</span>
+    </div>
+  </div>
+</section>
+
+<!-- 03 // SYSTEMS -->
+<section id="systems" class="fade-in">
+  <span class="section-id">03 // SYSTEMS</span>
+  <h2 class="section-title">Core Mechanics</h2>
+
+  <ul class="mechanics-list">
+    <li>The radiation doesn't wait. It pushes east — through Zervograd and beyond — and the zones you survive today are tomorrow's dead zones. You are always moving west or you are dying.</li>
+    <li>Day/night cycle with dynamic radiation zones — read the forecast, then decide how far to go.</li>
+    <li>The map expands endlessly east. Better loot in contaminated zones. Higher cost in rads. Everything is a trade.</li>
+    <li>Sanity system that distorts the world the further you fall — hallucinations, false signals, wrong directions.</li>
+    <li>Radio towers — functional only on clear days. Sometimes you hear voices that shouldn't be there.</li>
+    <li>Trade with survivors still clinging to the zones behind you. Help them. Use them. Leave them. It counts.</li>
+    <li>Multiple endings shaped by what you carried, who you were, and what you chose to leave behind.</li>
+    <li>Your choices are counted. Silently. The whole time.</li>
+    <li>PSX-style 2D visuals — built in Godot. No monsters. Just consequence.</li>
+  </ul>
+</section>
+
+<!-- 04 // STATUS -->
+<section id="status" class="fade-in">
+  <span class="section-id">04 // LIVE DATA</span>
+  <h2 class="section-title">Project Status</h2>
+
+  <div class="status-grid">
+    <div class="status-cell">
+      <div class="label"><div class="dot"></div> Development Phase</div>
+      <span class="val">In Development</span>
+      <div class="note">Active · Solo · Godot Engine</div>
+    </div>
+    <div class="status-cell">
+      <div class="label"><div class="dot inactive"></div> Demo Build</div>
+      <span class="val">Coming Soon</span>
+      <div class="note">Free to Play</div>
+    </div>
+    <div class="status-cell">
+      <div class="label"><div class="dot inactive"></div> Full Release</div>
+      <span class="val">$2 – $7</span>
+      <div class="note">Pay what feels fair</div>
+    </div>
+  </div>
+
+  <div class="links-row">
+    <a href="https://stdk.itch.io" target="_blank" class="link-btn">stdk.itch.io ↗</a>
+    <a href="https://bsky.app" target="_blank" class="link-btn secondary">Bluesky ↗</a>
+    <a href="https://mastodon.social" target="_blank" class="link-btn secondary">Mastodon ↗</a>
+  </div>
+</section>
+
+<!-- 05 // DEVELOPER -->
+<section id="developer" class="fade-in">
+  <span class="section-id">05 // DEVELOPER</span>
+  <h2 class="section-title">The Studio</h2>
+
+  <div class="dev-bio">
+    <p>STDK. Solo. Hobby. Godot.</p>
+    <p>I'm 17, working a mechanical job, building games on the side. School didn't stick. The path toward becoming a "real" developer closed a while ago, and that's just how it is. But I never really stopped making things.</p>
+    <p>I build games in the gaps — after shifts, on weekends, whenever I've got enough energy left. No team, no budget, no plan to go full-time. Just Godot, a folder full of ideas, and enough stubbornness to finish what I start.</p>
+    <div class="dev-quote">"Not everyone who builds things ends up where they thought they were going. Sometimes you just keep building anyway."</div>
+  </div>
+</section>
+
+<footer>
+  <div class="f-title">RELATIVITY IS IRRELEVANT</div>
+  <div class="f-sub">© STDK · ALL RIGHTS RESERVED · BUILT IN GODOT</div>
+</footer>
 
 <script>
-/* ── CONFIG ─────────────────────────────────────────────────── */
-const TEST_MODE  = true;
-const RSS_PROD   = 'https://stdk.itch.io/relativity-is-irrelevant/devlog.rss';
-const RSS_TEST   = 'https://stdk.itch.io/poliworldx/devlog.rss';
-const PROXY      = 'https://api.allorigins.win/get?url=';
-const FALLBACK_COVER = 'game_art_launcher.png';
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-const TIER_LABELS = { MJ: 'Major', MN: 'Minor', P: 'Patch' };
-const TIER_COVERS = { MJ: 'MJ.png', MN: 'MN.png', P: 'P.png' };
-
-let devlogLoaded = false;
-
-/* ── MOBILE MENU ─────────────────────────────────────────────── */
-function toggleMobileMenu() {
-  const menu = document.getElementById('mobile-menu');
-  const btn  = document.getElementById('hamburger');
-  const open = menu.classList.toggle('open');
-  btn.classList.toggle('open', open);
-  document.body.style.overflow = open ? 'hidden' : '';
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobile-menu').classList.remove('open');
-  document.getElementById('hamburger').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-/* ── NAV ACTIVE ──────────────────────────────────────────────── */
-function setActive(el) {
-  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-  el.classList.add('active');
-}
-
-/* ── SLIDER ──────────────────────────────────────────────────── */
-let current = 0;
-const slidesEl  = document.getElementById('slides');
-const images    = slidesEl.querySelectorAll('img');
-const dotsEl    = document.getElementById('dots');
-const counterEl = document.getElementById('slider-counter');
-
-images.forEach((_, i) => {
-  const d = document.createElement('button');
-  d.className = 'dot' + (i === 0 ? ' active' : '');
-  d.onclick = () => goTo(i);
-  dotsEl.appendChild(d);
-});
-
-function pad(n) { return String(n).padStart(2, '0'); }
-
-function goTo(n) {
-  current = (n + images.length) % images.length;
-  slidesEl.style.transform = `translateX(-${current * 100}%)`;
-  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
-  if (counterEl) counterEl.textContent = `${pad(current + 1)} / ${pad(images.length)}`;
-}
-
-function slide(dir) { goTo(current + dir); }
-
-// Auto-advance
-setInterval(() => slide(1), 5000);
-
-/* ── PAGE SWITCHING ──────────────────────────────────────────── */
-function openDevlog() {
-  document.getElementById('page-main').classList.add('hidden');
-  document.getElementById('page-devlog').classList.add('active');
-  window.scrollTo(0, 0);
-  if (!devlogLoaded) loadDevlog();
-}
-
-function closeDevlog() {
-  document.getElementById('page-devlog').classList.remove('active');
-  document.getElementById('page-main').classList.remove('hidden');
-  window.scrollTo(0, 0);
-}
-
-/* ── VERSION PARSE ───────────────────────────────────────────── */
-function parseVersion(title) {
-  const m = title.match(/(\d{3})-(MJ|MN|P)-([0-7])/i);
-  if (!m) return null;
-  return { cycle: m[1], tier: m[2].toUpperCase(), step: m[3] };
-}
-
-function fmtDate(s) {
-  try { return new Date(s).toISOString().split('T')[0]; } catch { return s || ''; }
-}
-
-function getDesc(item) {
-  const enc = item.getElementsByTagNameNS('*', 'encoded')[0];
-  return enc ? enc.textContent : (item.querySelector('description')?.textContent || '');
-}
-
-/* ── LOAD RSS ────────────────────────────────────────────────── */
-async function loadDevlog() {
-  devlogLoaded = true;
-  const feedUrl  = TEST_MODE ? RSS_TEST : RSS_PROD;
-  const proxyUrl = PROXY + encodeURIComponent(feedUrl);
-  try {
-    const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (!data.contents) throw new Error('Empty response');
-    const xml   = new DOMParser().parseFromString(data.contents, 'application/xml');
-    const items = Array.from(xml.querySelectorAll('item'));
-    if (!items.length) {
-      document.getElementById('devlog-content').innerHTML =
-        '<div class="devlog-loading">// NO POSTS FOUND</div>';
-      return;
-    }
-    renderList(items);
-  } catch(e) {
-    document.getElementById('devlog-content').innerHTML =
-      `<div class="devlog-error">// FAILED TO LOAD DEVLOG<br>// ${e.message}</div>`;
-  }
-}
-
-/* ── RENDER LIST ─────────────────────────────────────────────── */
-function renderList(items) {
-  const container = document.getElementById('devlog-content');
-  const list = document.createElement('div');
-  list.className = 'post-list';
-
-  items.forEach(item => {
-    const title   = item.querySelector('title')?.textContent?.trim() || 'Untitled';
-    const pubDate = item.querySelector('pubDate')?.textContent || '';
-    const rawDesc = getDesc(item);
-    const link    = item.querySelector('link')?.textContent || '#';
-    const ver     = parseVersion(title);
-
-    const card = document.createElement('div');
-    card.className = 'post-card';
-
-    const coverSrc = (ver && TIER_COVERS[ver.tier]) ? TIER_COVERS[ver.tier] : FALLBACK_COVER;
-    const coverHtml = `<img class="post-cover" src="${coverSrc}" alt="cover" onerror="this.src='${FALLBACK_COVER}'">`;
-
-    const verHtml = ver
-      ? `<div class="post-version">
-           <span class="post-cycle">${ver.cycle}</span>
-           <span class="post-tier-step">${ver.tier}-${ver.step}</span>
-         </div>`
-      : `<div class="post-version"><span class="post-cycle" style="font-size:1rem;color:var(--muted2)">—</span></div>`;
-
-    const badge = ver
-      ? `<span class="post-badge">${TIER_LABELS[ver.tier] || ver.tier}</span>`
-      : '';
-
-    card.innerHTML = `
-      <div class="post-card-inner">
-        ${verHtml}
-        ${coverHtml}
-        <div class="post-meta">
-          <div class="post-title-text">${title}</div>
-          <div class="post-date">${fmtDate(pubDate)}</div>
-        </div>
-        ${badge}
-        <span class="post-arr">›</span>
-      </div>`;
-
-    card.onclick = () => openModal(title, pubDate, rawDesc, ver, link);
-    list.appendChild(card);
-  });
-
-  container.innerHTML = '';
-  container.appendChild(list);
-}
-
-/* ── MODAL ───────────────────────────────────────────────────── */
-function openModal(title, pubDate, rawDesc, ver, link) {
-  const body = document.getElementById('modal-body-content');
-
-  const tmp = document.createElement('div');
-  tmp.innerHTML = rawDesc;
-  const firstImg = tmp.querySelector('img');
-  let heroHtml = '';
-  if (firstImg) {
-    heroHtml = `<img class="modal-hero-img" src="${firstImg.src}" alt="screenshot" onerror="this.src='${FALLBACK_COVER}'">`;
-    firstImg.remove();
-  }
-
-  const verBlock = ver ? `
-    <div class="modal-version-row">
-      <span class="modal-cycle">${ver.cycle}</span>
-      <span class="modal-tier-step">${ver.tier}-${ver.step} · ${TIER_LABELS[ver.tier] || ver.tier}</span>
-    </div>` : '';
-
-  body.innerHTML = `
-    ${verBlock}
-    <div class="modal-title">${title}</div>
-    <div class="modal-date">${fmtDate(pubDate)}</div>
-    ${heroHtml}
-    <div class="modal-body">${tmp.innerHTML}</div>
-    <div style="margin-top:2rem;">
-      <a href="${link}" target="_blank" rel="noopener" class="btn primary">View on itch.io ↗</a>
-    </div>`;
-
-  document.getElementById('post-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal() {
-  document.getElementById('post-modal').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function closeModalOutside(e) {
-  if (e.target.id === 'post-modal') closeModal();
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-/* ── SCROLL REVEAL ───────────────────────────────────────────── */
-const revealStyle = document.createElement('style');
-revealStyle.textContent = `
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
-  .reveal.visible { opacity: 1; transform: none; }
-`;
-document.head.appendChild(revealStyle);
-
-const revealTargets = [
-  '.about-cell', '.feature-item', '.status-card',
-  '.transmission-block', '.about-grid', '.features-grid',
-  '.status-grid', '.studio-inner', '.devlog-cta-btn',
-  '.section-header'
-];
-
-revealTargets.forEach(sel => {
-  document.querySelectorAll(sel).forEach((el, i) => {
-    el.classList.add('reveal');
-    el.style.transitionDelay = (i * 0.05) + 's';
-  });
-});
-
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-/* ── PARALLAX HERO ───────────────────────────────────────────── */
-window.addEventListener('scroll', () => {
-  const hero = document.querySelector('.hero');
-  const heroImg = document.querySelector('.hero-img');
-  if (!hero || !heroImg) return;
-  const scrolled = window.scrollY;
-  heroImg.style.transform = `scale(1.05) translateY(${scrolled * 0.25}px)`;
-});
-
-/* ── SMOOTH SCROLL NAV ───────────────────────────────────────── */
-document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    const id = a.getAttribute('href');
-    if (id === '#') return;
-    const el = document.querySelector(id);
-    if (el) {
-      e.preventDefault();
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-});
+  // Flicker the broadcast box label occasionally
+  const broadcastLabel = document.querySelector('.broadcast-box::before');
+  // Subtle typing cursor on the ticker
 </script>
-
 </body>
 </html>
